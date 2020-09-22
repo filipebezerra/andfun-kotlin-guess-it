@@ -18,10 +18,13 @@ class GameViewModel : ViewModel() {
         // These represent different important times
         // This is when the game is over
         private const val DONE = 0L
+
         // This is the number of milliseconds in a second
         private const val ONE_SECOND = 1000L
+
         // This is the total time of the game
         private const val COUNTDOWN_TIME = 60000L
+
         // This is when we must start to buzz a panic pattern
         private const val COUNTDOWN_PANIC_SECONDS = 10L
     }
@@ -69,31 +72,25 @@ class GameViewModel : ViewModel() {
         resetList()
         nextWord()
         timer = object : CountDownTimer(COUNTDOWN_TIME, ONE_SECOND) {
-            override fun onTick(millisUntilFinished: Long) {
-                val secondsToFinished = millisUntilFinished / ONE_SECOND
-                _currentTime.value = secondsToFinished
-                if (secondsToFinished <= COUNTDOWN_PANIC_SECONDS) {
-                    _eventBuzz.value = BuzzType.COUNTDOWN_PANIC
-                }
-            }
-
-            override fun onFinish() {
-                _currentTime.value = DONE
-                _eventGameFinish.value = true
-                _eventBuzz.value = BuzzType.GAME_OVER
-            }
+            override fun onTick(millisUntilFinished: Long) = onTimerTick(millisUntilFinished)
+            override fun onFinish() = finishGame()
         }
         timer.start()
     }
 
-//    private fun onTimerTick(millisUntilFinished: Long) {
-//        _currentTime.value = millisUntilFinished / ONE_SECOND
-//    }
-//
-//    private fun finishGame() {
-//        _eventGameFinish.value = true
-//        _currentTime.value = DONE
-//    }
+    private fun onTimerTick(millisUntilFinished: Long) {
+        val secondsToFinished = millisUntilFinished / ONE_SECOND
+        _currentTime.value = secondsToFinished
+        if (secondsToFinished <= COUNTDOWN_PANIC_SECONDS) {
+            _eventBuzz.value = BuzzType.COUNTDOWN_PANIC
+        }
+    }
+
+    private fun finishGame() {
+        _currentTime.value = DONE
+        _eventGameFinish.value = true
+        _eventBuzz.value = BuzzType.GAME_OVER
+    }
 
     /**
      * Resets the list of words and randomizes the order

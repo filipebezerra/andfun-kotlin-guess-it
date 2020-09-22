@@ -46,36 +46,37 @@ class GameFragment : Fragment() {
                 this.lifecycleOwner = viewLifecycleOwner
             }
             .also {
-                viewModel.eventGameFinish.observe(viewLifecycleOwner, Observer { hasFinished ->
-                    if (hasFinished) {
-                        gameFinished()
-                        viewModel.onGameFinishComplete()
-                    }
-                })
-                viewModel.eventBuzz.observe(viewLifecycleOwner, Observer { type ->
-                    if (type != GameViewModel.BuzzType.NO_BUZZ) {
-                        buzz(type.pattern)
-                        viewModel.onBuzzComplete()
-                    }
-                })
+                viewModel.run {
+                    eventGameFinish.observe(viewLifecycleOwner, Observer { hasFinished ->
+                        handleEventGameFinish(hasFinished)
+                    })
+                    eventBuzz.observe(viewLifecycleOwner, Observer { buzzType ->
+                        handleEventBuzz(buzzType)
+                    })
+                }
             }
             .root
 
     /**
      * Called when the game is finished
      */
-    private fun gameFinished() {
-        val action = GameFragmentDirections.actionGameToScore(viewModel.score.value ?: 0)
-        findNavController(this).navigate(action)
+    private fun handleEventGameFinish(hasFinished: Boolean) {
+        if (hasFinished) {
+            val action = GameFragmentDirections.actionGameToScore(viewModel.score.value ?: 0)
+            findNavController(this).navigate(action)
+            viewModel.onGameFinishComplete()
+        }
     }
 
-//    private fun handleEventGameFinish(hasFinished: Boolean) {
-//        if (hasFinished) {
-//            val action = GameFragmentDirections.actionGameToScore(viewModel.score.value ?: 0)
-//            findNavController(this).navigate(action)
-//            viewModel.onGameFinishComplete()
-//        }
-//    }
+    /**
+     *
+     */
+    private fun handleEventBuzz(type: GameViewModel.BuzzType) {
+        if (type != GameViewModel.BuzzType.NO_BUZZ) {
+            buzz(type.pattern)
+            viewModel.onBuzzComplete()
+        }
+    }
 
     @Suppress("DEPRECATION")
     private fun buzz(pattern: LongArray) {
