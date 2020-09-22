@@ -20,12 +20,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.NavHostFragment.findNavController
-import com.example.android.guesstheword.R
 import com.example.android.guesstheword.databinding.GameFragmentBinding
 
 /**
@@ -35,30 +33,24 @@ class GameFragment : Fragment() {
 
     private val viewModel by viewModels<GameViewModel>()
 
-    private lateinit var binding: GameFragmentBinding
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
-
-        // Inflate view and obtain an instance of the binding class
-        binding = DataBindingUtil.inflate(
-                inflater,
-                R.layout.game_fragment,
-                container,
-                false
-        )
-
-        binding.viewmodel = viewModel
-        binding.lifecycleOwner = viewLifecycleOwner
-
-        viewModel.eventGameFinish.observe(viewLifecycleOwner, Observer { hasFinished ->
-            if (hasFinished) {
-                gameFinished()
-                viewModel.onGameFinishComplete()
+    override fun onCreateView(
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
+    ): View? = GameFragmentBinding.inflate(inflater)
+            .apply {
+                this.viewmodel = viewModel
+                this.lifecycleOwner = viewLifecycleOwner
             }
-        })
-        return binding.root
-    }
+            .also {
+                viewModel.eventGameFinish.observe(viewLifecycleOwner, Observer { hasFinished ->
+                    if (hasFinished) {
+                        gameFinished()
+                        viewModel.onGameFinishComplete()
+                    }
+                })
+            }
+            .root
 
     /**
      * Called when the game is finished

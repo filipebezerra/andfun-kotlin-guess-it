@@ -42,8 +42,8 @@ class GameViewModel : ViewModel() {
     val currentTime: LiveData<Long>
         get() = _currentTime
 
-    val timerText: LiveData<String>
-        get() = Transformations.map(currentTime, ::getCurrentTimeAsElapsedTime)
+    val elapsedTime: LiveData<String>
+        get() = Transformations.map(currentTime) { time -> DateUtils.formatElapsedTime(time) }
 
     init {
         resetList()
@@ -60,9 +60,6 @@ class GameViewModel : ViewModel() {
         }
         timer.start()
     }
-
-    private fun getCurrentTimeAsElapsedTime(time: Long) = DateUtils.formatElapsedTime(time)
-
 
     /**
      * Resets the list of words and randomizes the order
