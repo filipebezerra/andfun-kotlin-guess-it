@@ -45,12 +45,20 @@ class GameFragment : Fragment() {
                 false
         )
 
-        viewBinding.correctButton.setOnClickListener { viewModel.onCorrect() }
-        viewBinding.skipButton.setOnClickListener { viewModel.onSkip() }
-        viewModel.score.observe(viewLifecycleOwner) { score ->
-            viewBinding.scoreText.text = score.toString()
+        with(viewBinding) {
+            correctButton.setOnClickListener { viewModel.onCorrect() }
+            skipButton.setOnClickListener { viewModel.onSkip() }
         }
-        viewModel.word.observe(viewLifecycleOwner) { word -> viewBinding.wordText.text = word }
+        with(viewModel) {
+            score.observe(viewLifecycleOwner) { score ->
+                viewBinding.scoreText.text = score.toString()
+            }
+            word.observe(viewLifecycleOwner) { word -> viewBinding.wordText.text = word }
+            eventGameFinished.observe(viewLifecycleOwner) { hasFinished ->
+                if (hasFinished)
+                    gameFinished()
+            }
+        }
         return viewBinding.root
     }
 
@@ -60,5 +68,6 @@ class GameFragment : Fragment() {
     private fun gameFinished() {
         val action = GameFragmentDirections.actionGameToScore(viewModel.score.value ?: 0)
         findNavController(this).navigate(action)
+        viewModel.onGameFinishedNavigated()
     }
 }
