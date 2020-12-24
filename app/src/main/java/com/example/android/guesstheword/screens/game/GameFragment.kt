@@ -58,6 +58,7 @@ class GameFragment : Fragment() {
                 if (hasFinished)
                     gameFinished()
             }
+            timerText.observe(viewLifecycleOwner) { viewBinding.timerText.text = it }
         }
         return viewBinding.root
     }

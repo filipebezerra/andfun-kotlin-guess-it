@@ -1,5 +1,7 @@
 package com.example.android.guesstheword.screens.game
 
+import android.os.CountDownTimer
+import android.text.format.DateUtils
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -23,9 +25,28 @@ class GameViewModel : ViewModel() {
     val eventGameFinished: LiveData<Boolean>
         get() = _eventGameFinished
 
+    private lateinit var timer: CountDownTimer
+
+    private val _timerText = MutableLiveData("0:00")
+    val timerText: LiveData<String>
+        get() = _timerText
+
     init {
         resetList()
         nextWord()
+        configureTimer()
+    }
+
+    private fun configureTimer() {
+        timer = object : CountDownTimer(COUNTDOWN_TIME, ONE_SECOND) {
+            override fun onTick(millisUntilFinished: Long) {
+                _timerText.value = DateUtils.formatElapsedTime(millisUntilFinished / ONE_SECOND)
+            }
+
+            override fun onFinish() {
+                finishGame()
+            }
+        }.run { start() }
     }
 
     /**
@@ -64,10 +85,14 @@ class GameViewModel : ViewModel() {
     private fun nextWord() {
         //Select and remove a word from the list
         if (wordList.isEmpty()) {
-            _eventGameFinished.value = true
+            finishGame()
         } else {
             _word.value = wordList.removeAt(0)
         }
+    }
+
+    private fun finishGame() {
+        _eventGameFinished.value = true
     }
 
     /** Methods for buttons presses **/
@@ -84,5 +109,19 @@ class GameViewModel : ViewModel() {
 
     fun onGameFinishedNavigated() {
         _eventGameFinished.value = false
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        timer.cancel()
+    }
+
+    companion object {
+        // This is when the game is over
+        const val DONE = 0L
+        // This is the number of milliseconds in a second
+        const val ONE_SECOND = 1000L
+        // This is the total time of the game
+        const val COUNTDOWN_TIME = 60000L
     }
 }
