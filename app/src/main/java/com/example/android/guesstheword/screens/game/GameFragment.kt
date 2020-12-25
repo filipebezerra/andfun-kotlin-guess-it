@@ -22,8 +22,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.navigation.fragment.NavHostFragment.findNavController
+import androidx.navigation.NavController
+import androidx.navigation.fragment.findNavController
 import com.example.android.guesstheword.databinding.GameFragmentBinding
+import com.example.android.guesstheword.screens.game.GameViewModel.Companion.INITIAL_SCORE
 
 /**
  * Fragment where the game is played
@@ -32,7 +34,7 @@ class GameFragment : Fragment() {
 
     private val viewModel: GameViewModel by viewModels()
 
-    private lateinit var viewBinding: GameFragmentBinding
+    private val navController: NavController by lazy { findNavController() }
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -47,20 +49,16 @@ class GameFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        with(viewModel) {
-            eventGameFinished.observe(viewLifecycleOwner) { hasFinished ->
-                if (hasFinished)
-                    gameFinished()
-            }
+        viewModel.eventGameFinished.observe(viewLifecycleOwner) { hasFinished ->
+            if (hasFinished) gameFinished()
         }
     }
 
     /**
      * Called when the game is finished
      */
-    private fun gameFinished() {
-        val action = GameFragmentDirections.actionGameToScore(viewModel.score.value ?: 0)
-        findNavController(this).navigate(action)
-        viewModel.onGameFinishedNavigated()
-    }
+    private fun gameFinished() =
+        GameFragmentDirections.actionGameToScore(viewModel.score.value ?: INITIAL_SCORE)
+                .run { navController.navigate(this) }
+                .also { viewModel.onGameFinishedNavigated() }
 }

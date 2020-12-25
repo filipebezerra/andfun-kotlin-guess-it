@@ -4,6 +4,7 @@ import android.os.CountDownTimer
 import android.text.format.DateUtils
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 
 class GameViewModel : ViewModel() {
@@ -14,7 +15,7 @@ class GameViewModel : ViewModel() {
         get() = _word
 
     // The current score
-    private val _score = MutableLiveData(0)
+    private val _score = MutableLiveData(INITIAL_SCORE)
     val score: LiveData<Int>
         get() = _score
 
@@ -27,9 +28,11 @@ class GameViewModel : ViewModel() {
 
     private lateinit var timer: CountDownTimer
 
-    private val _timerText = MutableLiveData("0:00")
-    val timerText: LiveData<String>
-        get() = _timerText
+    private val currentTime = MutableLiveData(DONE)
+
+    val currentTimeText: LiveData<String> = Transformations.map(currentTime) {
+        DateUtils.formatElapsedTime(it)
+    }
 
     init {
         resetList()
@@ -40,12 +43,11 @@ class GameViewModel : ViewModel() {
     private fun configureTimer() {
         timer = object : CountDownTimer(COUNTDOWN_TIME, ONE_SECOND) {
             override fun onTick(millisUntilFinished: Long) {
-                _timerText.value = DateUtils.formatElapsedTime(millisUntilFinished / ONE_SECOND)
+                currentTime.value = millisUntilFinished / ONE_SECOND
             }
 
-            override fun onFinish() {
-                finishGame()
-            }
+            override fun onFinish() = finishGame()
+
         }.run { start() }
     }
 
@@ -92,6 +94,7 @@ class GameViewModel : ViewModel() {
     }
 
     private fun finishGame() {
+        currentTime.value = DONE
         _eventGameFinished.value = true
     }
 
@@ -123,5 +126,8 @@ class GameViewModel : ViewModel() {
         const val ONE_SECOND = 1000L
         // This is the total time of the game
         const val COUNTDOWN_TIME = 60000L
+
+        // This is the initial score of the game
+        const val INITIAL_SCORE = 0
     }
 }
