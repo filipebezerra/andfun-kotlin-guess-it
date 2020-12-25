@@ -22,33 +22,26 @@ class GameViewModel : ViewModel() {
     // The list of words - the front of the list is the next word to guess
     private lateinit var wordList: MutableList<String>
 
-    private val _eventGameFinished = MutableLiveData(false)
-    val eventGameFinished: LiveData<Boolean>
-        get() = _eventGameFinished
+    private val _gameFinishedEvent = MutableLiveData(false)
+    val gameFinishedEvent: LiveData<Boolean>
+        get() = _gameFinishedEvent
 
     private lateinit var timer: CountDownTimer
 
-    private val currentTime = MutableLiveData(DONE)
+    private val _currentTime = MutableLiveData(DONE)
 
-    val currentTimeText: LiveData<String> = Transformations.map(currentTime) {
+    val currentTimeText: LiveData<String> = Transformations.map(_currentTime) {
         DateUtils.formatElapsedTime(it)
     }
+
+    private val _buzzGameEvent = MutableLiveData<BuzzType>()
+    val buzzGameEvent: LiveData<BuzzType>
+        get() = _buzzGameEvent
 
     init {
         resetList()
         nextWord()
         configureTimer()
-    }
-
-    private fun configureTimer() {
-        timer = object : CountDownTimer(COUNTDOWN_TIME, ONE_SECOND) {
-            override fun onTick(millisUntilFinished: Long) {
-                currentTime.value = millisUntilFinished / ONE_SECOND
-            }
-
-            override fun onFinish() = finishGame()
-
-        }.run { start() }
     }
 
     /**
@@ -93,25 +86,59 @@ class GameViewModel : ViewModel() {
         }
     }
 
-    private fun finishGame() {
-        currentTime.value = DONE
-        _eventGameFinished.value = true
+    /**
+     * Setup and start the game timer
+     */
+    private fun configureTimer() {
+        timer = object : CountDownTimer(COUNTDOWN_TIME, ONE_SECOND) {
+            override fun onTick(millisUntilFinished: Long) = gameTicking(millisUntilFinished)
+            override fun onFinish() = finishGame()
+        }.run { start() }
     }
 
-    /** Methods for buttons presses **/
+    /**
+     * Game event fired when [timer] completed one cycle of [ONE_SECOND]
+     */
+    private fun gameTicking(millisUntilFinished: Long) {
+        (millisUntilFinished / ONE_SECOND).let { secondsUntilFinished ->
+            _currentTime.value = secondsUntilFinished
+            secondsUntilFinished.takeIf { it <= SECONDS_TO_FINISH }?.apply {
+                _buzzGameEvent.value = BuzzType.COUNTDOWN_PANIC
+            }
+        }
+    }
 
+    /**
+     * Game event fired when [timer] is [DONE] counting
+     */
+    private fun finishGame() {
+        _currentTime.value = DONE
+        _gameFinishedEvent.value = true
+        _buzzGameEvent.value = BuzzType.GAME_FINISHED
+    }
+
+    /**
+     * User interaction event fired when user touched SKIP button
+     */
     fun onSkip() {
         _score.value = score.value?.minus(1)
         nextWord()
     }
 
+    /**
+     * User interaction event fired when user touched GOT IT button
+     */
     fun onCorrect() {
+        _buzzGameEvent.value = BuzzType.CORRECT
         _score.value = score.value?.plus(1)
         nextWord()
     }
 
+    /**
+     * Navigation event fired when user completed navigating to Score screen
+     */
     fun onGameFinishedNavigated() {
-        _eventGameFinished.value = false
+        _gameFinishedEvent.value = false
     }
 
     override fun onCleared() {
@@ -129,5 +156,8 @@ class GameViewModel : ViewModel() {
 
         // This is the initial score of the game
         const val INITIAL_SCORE = 0
+
+        // This is the number os seconds to finish the game
+        const val SECONDS_TO_FINISH = 10
     }
 }
