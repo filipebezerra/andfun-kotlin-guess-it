@@ -38,29 +38,21 @@ class GameFragment : Fragment() {
             inflater: LayoutInflater,
             container: ViewGroup?,
             savedInstanceState: Bundle?
-    ): View {
-        viewBinding = GameFragmentBinding.inflate(
-                inflater,
-                container,
-                false
-        )
-
-        with(viewBinding) {
-            correctButton.setOnClickListener { viewModel.onCorrect() }
-            skipButton.setOnClickListener { viewModel.onSkip() }
-        }
-        with(viewModel) {
-            score.observe(viewLifecycleOwner) { score ->
-                viewBinding.scoreText.text = score.toString()
+    ): View = GameFragmentBinding.inflate(inflater, container, false)
+            .apply {
+                viewModel = this@GameFragment.viewModel
+                lifecycleOwner = viewLifecycleOwner
             }
-            word.observe(viewLifecycleOwner) { word -> viewBinding.wordText.text = word }
+            .root
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        with(viewModel) {
             eventGameFinished.observe(viewLifecycleOwner) { hasFinished ->
                 if (hasFinished)
                     gameFinished()
             }
-            timerText.observe(viewLifecycleOwner) { viewBinding.timerText.text = it }
         }
-        return viewBinding.root
     }
 
     /**
