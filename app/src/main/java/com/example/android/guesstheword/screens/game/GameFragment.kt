@@ -16,126 +16,67 @@
 
 package com.example.android.guesstheword.screens.game
 
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.databinding.DataBindingUtil
+import androidx.core.content.getSystemService
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.NavHostFragment.findNavController
-import com.example.android.guesstheword.R
+import androidx.fragment.app.viewModels
+import androidx.navigation.NavController
+import androidx.navigation.fragment.findNavController
 import com.example.android.guesstheword.databinding.GameFragmentBinding
+import com.example.android.guesstheword.screens.game.GameViewModel.Companion.INITIAL_SCORE
 
 /**
  * Fragment where the game is played
  */
 class GameFragment : Fragment() {
 
-    // The current word
-    private var word = ""
+    private val viewModel: GameViewModel by viewModels()
 
-    // The current score
-    private var score = 0
+    private val navController: NavController by lazy { findNavController() }
 
-    // The list of words - the front of the list is the next word to guess
-    private lateinit var wordList: MutableList<String>
+    override fun onCreateView(
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
+    ): View = GameFragmentBinding.inflate(inflater, container, false)
+            .apply {
+                viewModel = this@GameFragment.viewModel
+                lifecycleOwner = viewLifecycleOwner
+            }
+            .root
 
-    private lateinit var binding: GameFragmentBinding
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
-
-        // Inflate view and obtain an instance of the binding class
-        binding = DataBindingUtil.inflate(
-                inflater,
-                R.layout.game_fragment,
-                container,
-                false
-        )
-
-        resetList()
-        nextWord()
-
-        binding.correctButton.setOnClickListener { onCorrect() }
-        binding.skipButton.setOnClickListener { onSkip() }
-        updateScoreText()
-        updateWordText()
-        return binding.root
-
-    }
-
-    /**
-     * Resets the list of words and randomizes the order
-     */
-    private fun resetList() {
-        wordList = mutableListOf(
-                "queen",
-                "hospital",
-                "basketball",
-                "cat",
-                "change",
-                "snail",
-                "soup",
-                "calendar",
-                "sad",
-                "desk",
-                "guitar",
-                "home",
-                "railway",
-                "zebra",
-                "jelly",
-                "car",
-                "crow",
-                "trade",
-                "bag",
-                "roll",
-                "bubble"
-        )
-        wordList.shuffle()
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        with(viewModel) {
+            gameFinishedEvent.observe(viewLifecycleOwner) { hasFinished ->
+                if (hasFinished) navigateToScore()
+            }
+            buzzGameEvent.observe(viewLifecycleOwner) { buzzType -> vibrate(buzzType.pattern) }
+        }
     }
 
     /**
      * Called when the game is finished
      */
-    private fun gameFinished() {
-        val action = GameFragmentDirections.actionGameToScore(score)
-        findNavController(this).navigate(action)
-    }
+    private fun navigateToScore() =
+            GameFragmentDirections.actionGameToScore(viewModel.score.value ?: INITIAL_SCORE)
+                    .run { navController.navigate(this) }
+                    .also { viewModel.onGameFinishedNavigated() }
 
-    /**
-     * Moves to the next word in the list
-     */
-    private fun nextWord() {
-        //Select and remove a word from the list
-        if (wordList.isEmpty()) {
-            gameFinished()
-        } else {
-            word = wordList.removeAt(0)
-        }
-        updateWordText()
-        updateScoreText()
-    }
-
-    /** Methods for buttons presses **/
-
-    private fun onSkip() {
-        score--
-        nextWord()
-    }
-
-    private fun onCorrect() {
-        score++
-        nextWord()
-    }
-
-    /** Methods for updating the UI **/
-
-    private fun updateWordText() {
-        binding.wordText.text = word
-
-    }
-
-    private fun updateScoreText() {
-        binding.scoreText.text = score.toString()
-    }
+    private fun vibrate(pattern: LongArray) =
+            activity?.getSystemService<Vibrator>()?.run {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrate(VibrationEffect.createWaveform(pattern, -1))
+                } else {
+                    //deprecated in API 26
+                    @Suppress("DEPRECATION")
+                    vibrate(pattern, -1)
+                }
+            }
 }

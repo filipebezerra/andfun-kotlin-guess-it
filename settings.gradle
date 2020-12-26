@@ -15,3 +15,4 @@
  */
 
 include ':app'
+rootProject.name = "Guess the Word"
